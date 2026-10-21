@@ -1,32 +1,7 @@
-
-:root {
-  font-family: 'DM Sans', sans-serif;
-  color: #29362e;
-  background: #f7f6f0;
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-* {
-  box-sizing: border-box;
-}
-
-html,
-body,
-#root {
-  width: 100%;
-  min-height: 100%;
-  margin: 0;
-}
-
 body {
-  min-width: 320px;
+  margin: 0;
+  background: #1f2a22;
+  display: grid;
+  place-items: center;
   min-height: 100vh;
-}
-
-button,
-input {
-  font: inherit;
 }
