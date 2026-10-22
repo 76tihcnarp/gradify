@@ -1,0 +1,49 @@
+{
+ "background": "/room/staffroom.png",
+ "objects": [
+  { "id": "clock", "img": "clock", "left": 60, "top": 8, "w": 12, "live": true, "label": "Timetable", "panel": "timetable" },
+  { "id": "board", "img": "board", "left": 30.5, "top": 7.5, "w": 29, "live": true, "label": "Display board", "panel": "board" },
+  { "id": "shelf", "img": "shelf", "left": 74, "top": 4, "w": 27, "live": true, "label": "Bookshelf", "panel": "shelf" },
+  { "id": "plant", "img": "plant", "left": 2, "top": 62, "w": 16 },
+  { "id": "desk", "img": "desk", "left": 18, "top": 60, "w": 61 },
+  { "id": "lamp", "img": "lamp", "left": 62, "top": 57, "w": 13 },
+  { "id": "drafts", "img": "drafts", "left": 51, "top": 69, "w": 11, "live": true, "label": "Drafts & reports", "panel": "drafts" },
+  { "id": "journal", "img": "journal", "left": 42, "top": 68, "w": 12, "live": true, "label": "Spiral journal", "panel": "journal" },
+  { "id": "books", "img": "books", "left": 33, "top": 67, "w": 11 },
+  { "id": "pens", "img": "pens", "left": 25, "top": 64, "w": 10, "live": true, "label": "Pen holder", "panel": "pens" },
+  { "id": "mug", "img": "mug", "left": 61, "top": 70, "w": 8 }
+ ],
+ "panels": {
+  "board": {
+   "title": "Class analytics",
+   "blurb": "Class performance, distribution and the students who may need support.",
+   "api": ["GET /analytics", "GET /students/at-risk"]
+  },
+  "journal": {
+   "title": "Prediction journal",
+   "blurb": "Pick a student, enter the model's real input features, and run a quick or detailed prediction.",
+   "api": ["POST /predict/quick", "POST /predict/detailed"]
+  },
+  "shelf": {
+   "title": "Syllabus & topics",
+   "blurb": "Subjects, units and topics, with what has been covered and what remains.",
+   "api": ["your topics / progress endpoints"]
+  },
+  "pens": {
+   "title": "Tasks & student progress",
+   "blurb": "Per-student progress and completed topics.",
+   "api": ["your progress endpoints"]
+  },
+  "drafts": {
+   "title": "Drafts & reports",
+   "blurb": "Upload a class CSV and generate a class performance report.",
+   "api": ["POST /upload", "your report endpoints"]
+  },
+  "timetable": {
+   "title": "Timetable",
+   "blurb": "Today's periods and the weekly class schedule.",
+   "api": ["new: timetable endpoint (not built yet)"]
+  }
+ },
+ "zoom": 1
+}
