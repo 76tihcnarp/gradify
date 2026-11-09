@@ -1,3 +1,6 @@
+import json
+from backend.db import get_db_connection
+
 import io
 from pathlib import Path
 from typing import Dict, List, Optional
@@ -73,7 +76,52 @@ DEFAULT_CURRICULUM = [
 ]
 
 progress_db: Dict[int, dict] = {}
+def save_prediction(student_data: dict, mode: str, predicted_score: float, risk_status: str):
+    connection = None
+    cursor = None
 
+    try:
+        connection = get_db_connection()
+        cursor = connection.cursor()
+
+        student_id = student_data.get("student_id")
+
+        if student_id is not None:
+            student_id = int(student_id)
+
+        cursor.execute(
+            """
+            INSERT INTO predictions
+            (student_id, mode, regression_score, classification_label,
+             risk_status, input_data, model_version)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+            """,
+            (
+                student_id,
+                mode,
+                predicted_score,
+                None,
+                risk_status,
+                json.dumps(student_data),
+                "gradify-v1",
+            ),
+        )
+
+        connection.commit()
+
+    except Exception as e:
+        if connection:
+            connection.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Could not save prediction to database: {str(e)}",
+        )
+
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
 
 # 4. API ENDPOINTS
 # ------------------------------------------------------------------
@@ -91,16 +139,23 @@ def home():
 def quick_predict(student_data: dict):
     if quick_regression is None:
         raise HTTPException(
-            status_code=500, detail="Quick regression model is not loaded."
+            status_code=500,
+            detail="Quick regression model is not loaded."
         )
 
-    input_data = pd.DataFrame([student_data])
-    predicted_score = quick_regression.predict(input_data)[0]
+    model_data = {
+        key: value
+        for key, value in student_data.items()
+        if key != "student_id"
+    }
+
+    input_data = pd.DataFrame([model_data])
+    predicted_score = float(quick_regression.predict(input_data)[0])
     risk_status = "At Risk" if predicted_score <= 10 else "Not At Risk"
 
     return {
         "mode": "quick",
-        "predicted_score": round(float(predicted_score), 2),
+        "predicted_score": round(predicted_score, 2),
         "risk_status": risk_status,
     }
 
@@ -165,12 +220,12 @@ def detailed_predict(student_data: dict):
         )
 
     input_data = prepare_detailed_input(student_data)
-    predicted_score = detailed_regression.predict(input_data)[0]
+    predicted_score = float(detailed_regression.predict(input_data)[0])
     risk_status = "At Risk" if predicted_score <= 10 else "Not At Risk"
 
     return {
         "mode": "detailed",
-        "predicted_score": round(float(predicted_score), 2),
+        "predicted_score": round(predicted_score, 2),
         "risk_status": risk_status,
     }
 
@@ -179,71 +234,79 @@ def detailed_predict(student_data: dict):
 
 # --- STUDENT MANAGEMENT ENDPOINTS ---
 
+def pick_model(columns):
+    """Detailed if all its columns exist, else quick."""
+    cols = set(columns)
+    for mode, model in (("detailed", detailed_regression), ("quick", quick_regression)):
+        if model is not None and set(model.feature_names_in_) <= cols:
+            return mode, model
+    return None, None
+
+
 @app.post("/students/upload")
-async def upload_students_csv(file: UploadFile = File(...)):
+async def upload_students_csv(file: UploadFile = File(...), save: bool = False):
     global students_df
 
     if not file.filename or not file.filename.lower().endswith(".csv"):
-        raise HTTPException(
-            status_code=400,
-            detail="Invalid file format. Please upload a CSV file.",
-        )
+        raise HTTPException(status_code=400, detail="Please upload a CSV file.")
 
+    contents = await file.read()
     try:
-        contents = await file.read()
-
-        if not contents:
-            raise HTTPException(
-                status_code=400,
-                detail="The uploaded CSV file is empty.",
-            )
-
-        csv_string = contents.decode("utf-8-sig")
-        first_line = csv_string.splitlines()[0]
-        delimiter = ";" if ";" in first_line else ","
-
-        new_df = pd.read_csv(
-            io.StringIO(csv_string),
-            sep=delimiter,
-        )
-
-        if new_df.empty:
-            raise HTTPException(
-                status_code=400,
-                detail="The uploaded CSV file contains no student records.",
-            )
-
-        if new_df.columns.duplicated().any():
-            raise HTTPException(
-                status_code=400,
-                detail="The CSV contains duplicate column names.",
-            )
-
-        # Replace existing in-memory student data instead of appending.
-        students_df = new_df.reset_index(drop=True)
-
-        return {
-            "status": "success",
-            "filename": file.filename,
-            "records_loaded": len(students_df),
-            "total_students_in_system": len(students_df),
-            "detected_delimiter": delimiter,
-        }
-
-    except HTTPException:
-        raise
-
-    except (UnicodeDecodeError, pd.errors.ParserError, ValueError) as e:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Failed to process CSV file: {str(e)}",
-        )
-
+        text = contents.decode("utf-8-sig")
+        sep = ";" if ";" in text.splitlines()[0] else ","
+        df = pd.read_csv(io.StringIO(text), sep=sep)
     except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to process CSV file: {str(e)}",
-        )
+        raise HTTPException(status_code=400, detail=f"Could not read CSV: {e}")
+
+    if df.empty:
+        raise HTTPException(status_code=400, detail="The CSV has no records.")
+
+    mode, model = pick_model(df.columns)
+    if model is None:
+        raise HTTPException(status_code=422, detail="CSV is missing columns needed by the models.")
+
+    scores = model.predict(df[list(model.feature_names_in_)])
+    ids = df["student_id"].astype(int).tolist() if "student_id" in df.columns \
+        else list(range(1, len(df) + 1))
+
+    results = []
+    for i, score in enumerate(scores):
+        score = float(score)
+        results.append({
+            "student_id": ids[i],
+            "predicted_score": round(score, 2),
+            "risk_status": "At Risk" if score <= 10 else "Not At Risk",
+        })
+
+    saved = 0
+    if save:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        try:
+            cur.execute("SELECT student_id FROM students")
+            valid = {r[0] for r in cur.fetchall()}
+            for i, r in enumerate(results):
+                if r["student_id"] not in valid:
+                    continue
+                cur.execute("DELETE FROM predictions WHERE student_id = %s", (r["student_id"],))
+                cur.execute(
+                    """INSERT INTO predictions
+                       (student_id, mode, regression_score, risk_status, input_data, model_version)
+                       VALUES (%s, %s, %s, %s, %s, %s)""",
+                    (r["student_id"], mode, r["predicted_score"], r["risk_status"],
+                     json.dumps(df.iloc[i].to_dict(), default=str), "gradify-v1"),
+                )
+                saved += 1
+            conn.commit()
+        except Exception as e:
+            conn.rollback()
+            raise HTTPException(status_code=500, detail=f"Could not save: {e}")
+        finally:
+            cur.close()
+            conn.close()
+
+    students_df = df.reset_index(drop=True)
+    return {"mode": mode, "total": len(results), "saved": saved, "results": results}
 
 
 # --- ANALYTICS & AT-RISK ENDPOINTS ---
@@ -255,7 +318,7 @@ def get_at_risk_students():
 
     if students_df is None or students_df.empty:
         try:
-            students_df = pd.read_csv("student-math.csv", sep=";")
+            students_df = pd.read_csv(DATA_PATH, sep=";")
         except Exception as e:
             raise HTTPException(
                 status_code=500, detail=f"Could not load dataset: {str(e)}"
@@ -327,7 +390,21 @@ def get_student_by_id(student_id: int):
         )
 
     student_data = students_df.iloc[row_idx].to_dict()
-    prediction_result = run_detailed_prediction(student_data)
+  
+    conn = get_db_connection()
+    cur = conn.cursor(dictionary=True)
+    cur.execute(
+    "SELECT regression_score, risk_status FROM predictions "
+    "WHERE student_id = %s ORDER BY prediction_id DESC LIMIT 1",
+    (student_id,),
+    )
+    saved = cur.fetchone()
+    cur.close()
+    conn.close()
+    prediction_result = {
+    "predicted_score": float(saved["regression_score"]) if saved else None,
+    "risk_status": saved["risk_status"] if saved else "Not published yet",
+    }
 
     return {
         "student_id": student_id,
@@ -358,7 +435,7 @@ def get_class_analytics():
 
     if students_df is None or students_df.empty:
         try:
-            students_df = pd.read_csv("student-math.csv", sep=";")
+            students_df = pd.read_csv(DATA_PATH, sep=";")
         except Exception as e:
             raise HTTPException(
                 status_code=500, detail=f"Could not load dataset: {str(e)}"
@@ -372,7 +449,7 @@ def get_class_analytics():
     failed_students = int((g3_scores < 10).sum())
 
     study_impact = {}
-    if "studytime" in students_df:
+    if "studytime" in students_df and "G3" in students_df:
         grouped = (
             students_df.groupby("studytime")["G3"].mean().round(2).to_dict()
         )
@@ -413,6 +490,34 @@ def get_class_analytics():
         },
     }
 
+
+@app.get("/analytics/score-count")
+def get_score_count(score: Optional[int] = None):
+    """Counts SAVED predicted scores. Add ?score=13 to get the count for one mark."""
+    conn = get_db_connection()
+    cur = conn.cursor()
+    try:
+        cur.execute(
+            "SELECT ROUND(regression_score), COUNT(*) FROM predictions "
+            "GROUP BY ROUND(regression_score) ORDER BY 1"
+        )
+        distribution = [
+            {"score": int(s), "student_count": int(c)} for s, c in cur.fetchall()
+        ]
+    finally:
+        cur.close()
+        conn.close()
+
+    result = {
+        "total_students": sum(d["student_count"] for d in distribution),
+        "distribution": distribution,
+    }
+    if score is not None:
+        result["score"] = score
+        result["student_count"] = next(
+            (d["student_count"] for d in distribution if d["score"] == score), 0
+        )
+    return result
 
 # --- PROGRESS TRACKING ENDPOINTS ---
 
