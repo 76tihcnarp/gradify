@@ -10,15 +10,17 @@ from fastapi.middleware.cors import CORSMiddleware
 import joblib
 import pandas as pd
 from pydantic import BaseModel
+from backend.classroom_routes import router as classroom_router
 
 # ------------------------------------------------------------------
 # 1. INITIALIZATION & APP SETUP
 # ------------------------------------------------------------------
 app = FastAPI(
     title="GRADIFY API",
-    description="Intelligent Student Performance Prediction and Academic Progress Tracking System",
+    description="Student Performance Prediction and Classroom Monitoring System",
     version="1.0.0",
 )
+app.include_router(classroom_router)
 
 # Enable CORS for React Frontend integration
 app.add_middleware(
@@ -255,6 +257,14 @@ async def upload_students_csv(file: UploadFile = File(...), save: bool = False):
         text = contents.decode("utf-8-sig")
         sep = ";" if ";" in text.splitlines()[0] else ","
         df = pd.read_csv(io.StringIO(text), sep=sep)
+        ALIASES = {
+         "g1": "G1", "grade1": "G1", "term1": "G1", "mark1": "G1","st1":"G1","ST1":"G1",
+         "g2": "G2", "grade2": "G2", "term2": "G2", "mark2": "G2","st2":"G1","ST2":"G1",
+         "studentid": "student_id", "roll no": "student_id", "rollno": "student_id",
+             }
+        df.columns = [ALIASES.get(str(c).strip().lower(), str(c).strip()) for c in df.columns]
+
+        
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Could not read CSV: {e}")
 
