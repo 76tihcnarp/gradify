@@ -1,17 +1,17 @@
 {
  "background": "/room/locker.jpg",
  "objects": [
-  { "id": "earphone", "img": "earphone", "left": 22.5, "top": 61, "w": 16, "live": true, "label": "Play music", "audio": "/audio/song2.mp3" },
-  { "id": "album", "img": "album", "ext": "jpg", "left": 50, "top": 20, "w": 9, "rot": -4, "live": true, "label": "Play music", "audio": "/audio/song1.mp3" },
+  { "id": "earphone", "img": "earphone", "left": 22.5, "top": 61, "w": 16, "live": true, "label": "play music", "audio": "/audio/song2.mp3" },
+  { "id": "album", "img": "album", "ext": "jpg", "left": 50, "top": 20, "w": 9, "rot": -4, "live": true, "label": "play music", "audio": "/audio/song1.mp3" },
   { "id": "journal", "img": "lockerjournal", "left": 67, "top": -2.1, "w": 12.5, "live": true, "label": "My prediction", "panel": "journal" },
-  { "id": "books", "img": "lockerbooks", "left": 40, "top": 60, "w": 23, "live": true, "label": "Syllabus", "panel": "books" },
-  { "id": "bag", "img": "bag", "left": 56, "top": 36, "w": 33, "live": true, "label": "Attendance & marks", "panel": "bag" },
-  { "id": "poster", "img": "poster", "left": 19.2, "top": 11.6, "w": 22, "live": true, "label": "My result", "panel": "poster" }
+  { "id": "books", "img": "lockerbooks", "left": 40, "top": 60, "w": 23, "live": true, "label": "syllabus", "panel": "books" },
+  { "id": "bag", "img": "bag", "left": 56, "top": 36, "w": 33, "live": true, "label": "attendance & marks", "panel": "bag" },
+  { "id": "poster", "img": "poster", "left": 19.2, "top": 11.6, "w": 20, "live": true, "label": "My result", "panel": "poster" }
  ],
  "panels": {
-  "poster":  { "title": "My result", "blurb": "Green apple: you're on track. Rotten apple: you could use some support.", "api": ["this student's status"] },
-  "journal": { "title": "Predicted performance", "blurb": "Your predicted category, confidence, key factors and a recommendation.", "api": ["this student's prediction"] },
-  "books":   { "title": "Syllabus", "blurb": "Topics covered so far and what remains.", "api": ["your topics / progress endpoints"] },
-  "bag":     { "title": "Attendance & marks", "blurb": "Your own marks and attendance.", "api": ["this student's records"] }
+  "poster":  { "title": "my result", "blurb": "green apple: you're on track. Rotten apple: you could use some support.", "api": ["this student's status"] },
+  "journal": { "title": "predicted performance", "blurb": "Your predicted category, confidence, key factors and a recommendation.", "api": ["this student's prediction"] },
+  "books":   { "title": "syllabus", "blurb": "Topics covered so far and what remains.", "api": ["your topics / progress endpoints"] },
+  "bag":     { "title": "attendance & marks", "blurb": "Your own marks and attendance.", "api": ["this student's records"] }
  }
 }

@@ -3,9 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { clearSession } from "../api";
 import "./Staffroom.css";
 
-export default function Scene({ layout, extras = {}, panels = {}, roomLabel = "Gradify" }) {
+export default function Scene({ layout, extras = {}, panels = {}, roomLabel = "Gradify", greeting = false }) {
   const [open, setOpen] = useState(null);
   const [nowPlaying, setNowPlaying] = useState(null);
+  const [showGreeting, setShowGreeting] = useState(Boolean(greeting));
   const audio = useRef(null);
   const go = useNavigate();
   const p = open && layout.panels?.[open];
@@ -31,6 +32,10 @@ export default function Scene({ layout, extras = {}, panels = {}, roomLabel = "G
   return (
     <main className="sr">
       <div className="sr-room-label">{roomLabel}</div>
+      <div className="sr-brand-mark" aria-label="Gradify">
+        <img src="/brand/gradify-mark.png" alt="" />
+      </div>
+      {showGreeting && <div className="sr-greeting" role="status">Have a great day!</div>}
       <div className="sr-world" style={{
         backgroundImage: `url(${layout.background})`,
         backgroundSize: `${(layout.bgZoom ?? 1) * 100}% auto`,

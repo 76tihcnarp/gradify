@@ -75,6 +75,30 @@ function AttendancePanel({ classId, students }) {
   </div>;
 }
 
+
+function BookStackPanel({ students, classId }) {
+  const [query, setQuery] = useState("");
+  const filtered = students.filter((student) => {
+    const text = `${student.student_name || ""} ${student.roll_number || ""} ${student.student_id || ""}`.toLowerCase();
+    return text.includes(query.toLowerCase().trim());
+  });
+
+  return <div className="panel-content">
+    <h3>Class students</h3>
+    <p className="muted">Find students by name, roll number or student ID.</p>
+    <label>Search students<input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search your class…" /></label>
+    <div className="data-list student-directory">
+      {filtered.map((student) => <div className="student-row" key={student.student_id}>
+        <span>{student.student_name}<small>Roll {student.roll_number}</small></span>
+        <b>ID {student.student_id}</b>
+      </div>)}
+      {!filtered.length && <p className="muted">No matching students.</p>}
+    </div>
+    <div className="panel-section-divider" />
+    <AttendancePanel classId={classId} students={students} />
+  </div>;
+}
+
 function AnalyticsPanel({ classId, analytics, atRisk, students }) {
   const [score, setScore] = useState("13");
   const [count, setCount] = useState(null);
@@ -231,7 +255,8 @@ export default function Staffroom() {
   };
 
   const panels = {
-    board: <><Notice error={error} /><AnalyticsPanel classId={classId} analytics={analytics} atRisk={atRisk} students={students} /><AttendancePanel classId={classId} students={students} /></>,
+    board: <><Notice error={error} /><AnalyticsPanel classId={classId} analytics={analytics} atRisk={atRisk} students={students} /></>,
+    books: <BookStackPanel classId={classId} students={students} />,
     timetable: <div className="panel-content"><h3>Class timetable</h3>{timetable ? <ProtectedImage path={timetable.file_url} alt="Class timetable" /> : <p className="muted">No timetable uploaded yet.</p>}<MaterialUpload classId={classId} type="timetable_photo" onUploaded={refresh} /></div>,
     shelf: <div className="panel-content"><h3>Class syllabus</h3>{syllabus ? <ProtectedImage path={syllabus.file_url} alt="Class syllabus" /> : <p className="muted">No syllabus uploaded yet.</p>}<MaterialUpload classId={classId} type="syllabus" onUploaded={refresh} /><h3>Topic checklist</h3><form className="inline-upload" onSubmit={addTopic}><input value={topicName} onChange={e => setTopicName(e.target.value)} placeholder="New topic name" required /><button className="small-primary">Add topic</button></form><Notice message={topicMessage} /><div className="data-list">{topics.map(t => <div className="student-row" key={t.topic_id}><span>{t.sort_order}. {t.topic_name}<small>{t.completed_records || 0} completion records</small></span><b>{t.completed_records ? `${t.completed_records}` : "—"}</b></div>)}</div></div>,
     drafts: <><AssessmentUploadPanel classId={classId} onUploaded={refresh} /><div className="panel-content"><h3>Recent assessment uploads</h3>{batches.slice(0,5).map(b => <div className="student-row" key={b.batch_id}><span>Batch #{b.batch_id}<small>{b.target_assessment} · {b.mode}</small></span><b>{b.predictions_created} predictions</b></div>)}</div></>,
@@ -245,5 +270,5 @@ export default function Staffroom() {
   };
 
   if (!classId) return <div className="connected-empty"><h2>No classroom selected</h2><button className="primary-btn" onClick={() => window.location.assign("/teacher/home")}>Choose a classroom</button></div>;
-  return <><button className="room-switch" onClick={() => window.location.assign("/teacher/home")}>← Classrooms</button><Scene layout={layout} extras={extras} panels={panels} roomLabel={`STAFFROOM · CLASS ${classId}`} /></>;
+  return <><button className="room-switch" onClick={() => window.location.assign("/teacher/home")}>← Classrooms</button><Scene layout={layout} extras={extras} panels={panels} roomLabel={`STAFFROOM · CLASS ${classId}`} greeting /></>;
 }

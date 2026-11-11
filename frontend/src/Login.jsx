@@ -38,8 +38,8 @@ export default function Login() {
   return (
     <main className="login-screen">
       <form className="login-card" onSubmit={submit}>
+        <div className="login-brand"><img src="/brand/gradify-full.png" alt="Gradify" /></div>
         <div className="login-kicker">YOUR CLASSROOM, REIMAGINED</div>
-        <h1>GRADIFY</h1>
         <p className="login-subtitle">A little space to learn, grow and keep track.</p>
         <div className="role-switch">
           <button type="button" className={role === "teacher" ? "active" : ""} onClick={() => { setRole("teacher"); setError(""); }}>Teacher</button>

@@ -297,3 +297,28 @@ button.sr-obj:focus-visible .sr-tag {
   color:#fff6dc;
   font:600 1.1cqw system-ui;
   cursor:pointer}
+/* In-room Gradify symbol and welcome message */
+.sr-brand-mark{
+  position:absolute;z-index:8;top:0.05cqw;right:7.15cqw;
+  width:clamp(22px,4.2cqw,62px);height:clamp(22px,4.2cqw,62px);
+  display:grid;place-items:center;padding:5px;box-sizing:border-box;
+  border-radius:12px;
+  
+}
+.sr-brand-mark img{width:100%;height:100%;object-fit:contain;display:block}
+.sr-greeting{
+  position:absolute;z-index:9;top:7.5%;left:50%;transform:translateX(-50%);
+  padding:.65cqw 1.35cqw;border-radius:.7cqw;
+  background:rgba(255,246,220,.96);color:#2f4a3c;
+  border:1px solid rgba(198,154,105,.8);
+  box-shadow:0 .25cqw .9cqw rgba(35,28,16,.2);
+  font:700 clamp(17px,2.2cqw,30px)/1.1 'Caveat',cursive;
+  white-space:nowrap;pointer-events:none;
+  animation:sr-greeting-in .45s ease-out both, sr-greeting-out .7s ease-in 9.3s both;
+}
+@keyframes sr-greeting-in{from{opacity:0;transform:translate(-50%,-8px)}to{opacity:1;transform:translate(-50%,0)}}
+@keyframes sr-greeting-out{to{opacity:0;transform:translate(-50%,-8px)}}
+@media(max-width:760px){
+  .sr-brand-mark{top:54px;right:12px;width:42px;height:32px}
+  .sr-greeting{top:11%;font-size:20px;padding:9px 14px}
+}
