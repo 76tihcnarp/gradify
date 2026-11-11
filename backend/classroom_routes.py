@@ -17,7 +17,7 @@ from pydantic import BaseModel, Field
 from backend.db import get_db_connection
 
 
-router = APIRouter(tags=["Classrooms and Authentication"])
+router = APIRouter(tags=["classrooms and authentication"])
 
 # Set GRADIFY_TOKEN_SECRET to a long random value in .env before deployment.
 TOKEN_SECRET = os.getenv(
